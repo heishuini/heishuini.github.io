@@ -1,9 +1,9 @@
-<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>(一)扩散模型学习——DDPM | Heishuini's Blog</title><meta name="author" content="heishuini"><meta name="copyright" content="heishuini"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="DDPM 《Denoising Diffusion Probabilistic Models》 代码：https:&#x2F;&#x2F;github.com&#x2F;hojonathanho&#x2F;diffusion 地址：http:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2006.11239  开篇之作：第一次使用diffusion models去做无条件图像生成任务。 扩散模型的核心便是，从一个复杂的数据分布，不断变换">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>(一)扩散模型学习——DDPM | Heishuini's Blog</title><meta name="author" content="heishuini"><meta name="copyright" content="heishuini"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="DDPM 《Denoising Diffusion Probabilistic Models》 代码：https:&#x2F;&#x2F;github.com&#x2F;hojonathanho&#x2F;diffusion 地址：http:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2006.11239    开篇之作：第一次使用diffusion models去做无条件图像生成任务。   扩散模型的核心便是，从一个复杂的数据分布，不断变换至简">
 <meta property="og:type" content="article">
 <meta property="og:title" content="(一)扩散模型学习——DDPM">
 <meta property="og:url" content="https://heishuini.github.io/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/index.html">
 <meta property="og:site_name" content="Heishuini&#39;s Blog">
-<meta property="og:description" content="DDPM 《Denoising Diffusion Probabilistic Models》 代码：https:&#x2F;&#x2F;github.com&#x2F;hojonathanho&#x2F;diffusion 地址：http:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2006.11239  开篇之作：第一次使用diffusion models去做无条件图像生成任务。 扩散模型的核心便是，从一个复杂的数据分布，不断变换">
+<meta property="og:description" content="DDPM 《Denoising Diffusion Probabilistic Models》 代码：https:&#x2F;&#x2F;github.com&#x2F;hojonathanho&#x2F;diffusion 地址：http:&#x2F;&#x2F;arxiv.org&#x2F;abs&#x2F;2006.11239    开篇之作：第一次使用diffusion models去做无条件图像生成任务。   扩散模型的核心便是，从一个复杂的数据分布，不断变换至简">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png">
 <meta property="article:published_time" content="2024-12-19T08:02:42.000Z">
@@ -148,213 +148,96 @@
   isShuoshuo: false
 }</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Heishuini's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">(一)扩散模型学习——DDPM</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">(一)扩散模型学习——DDPM</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2024-12-19T08:02:42.000Z" title="发表于 2024-12-19 16:02:42">2024-12-19</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-12-20T15:22:47.090Z" title="更新于 2024-12-20 23:22:47">2024-12-20</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><blockquote>
 <p>DDPM 《Denoising Diffusion Probabilistic Models》</p>
-<p>代码：https://github.com/hojonathanho/diffusion</p>
-<p>地址：http://arxiv.org/abs/2006.11239</p>
+<p>代码：<a target="_blank" rel="noopener" href="https://github.com/hojonathanho/diffusion">https://github.com/hojonathanho/diffusion</a></p>
+<p>地址：<a target="_blank" rel="noopener" href="http://arxiv.org/abs/2006.11239">http://arxiv.org/abs/2006.11239</a></p>
 </blockquote>
-<p>开篇之作：第一次使用diffusion models去做无条件图像生成任务。</p>
-<p>扩散模型的核心便是，从一个复杂的数据分布，不断变换至简单易分析的数据分布，如高斯分布。</p>
-<figure>
-<img src="./(一)扩散模型学习——DDPM/image-20241220194351190.png"
-alt="DDPM总体流程" />
-<figcaption aria-hidden="true">DDPM总体流程</figcaption>
-</figure>
-<p>在以上图中，首先是前向过程，对图像<span
-class="math inline">\(x_0\)</span>加噪得到一系列<span
-class="math inline">\(x_1\)</span>,<span
-class="math inline">\(x_2\)</span>,...,<span
-class="math inline">\(x_T\)</span>,最后<span
-class="math inline">\(x_T\)</span>接近高斯噪声；然后是逆向过程，从<span
-class="math inline">\(x_T\)</span>到<span
-class="math inline">\(x_0\)</span>的去噪过程，也称为图像生成过程。</p>
-<h2 id="总体流程">1 总体流程</h2>
-<h3 id="前向过程">1.1 前向过程</h3>
-<p>对图像加噪的方式，DDPM采用的是对图像和噪声<span
-class="math inline">\(\epsilon_{t-1}\sim
-\mathcal{N}(0,1)\)</span>，进行以下公式的加权求和： <span
-class="math display">\[
-x_t=\sqrt{1-\beta_t}x_{t-1}+\sqrt{\beta_t}\epsilon_{t-1}\\
-\]</span> <span
-class="math inline">\(\beta_t\)</span>是每一步加噪使用的方差，在实际上进行加噪时，起始时使用的方差比较小，随着加噪步骤增加，方差会逐渐增大。在
-DDPM 的原文中，使用的方差是从 <span
-class="math inline">\(β_1=10^{-4}\)</span> 随加噪时间步线性增大到 <span
-class="math inline">\(β_T=0.02\)</span>。这个过程也可以从反向进行理解，即去噪时先去掉比较大的噪音得到图像的雏形，再去掉小噪音进行细节的微调。</p>
-<p>上述形式其实算是<code>概率分布的重参数化形式</code>，而为直观理解噪声分布，可以将其还原为是对<span
-class="math inline">\(\mathcal{N}(0,1)\)</span>乘，又加，于是得到下式：<br />
-<span class="math display">\[
+<p>  开篇之作：第一次使用diffusion models去做无条件图像生成任务。</p>
+<p>  扩散模型的核心便是，从一个复杂的数据分布，不断变换至简单易分析的数据分布，如高斯分布。</p>
+<p><img src="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/(一" alt="DDPM总体流程">扩散模型学习——DDPM/image-20241220194351190.png)</p>
+<p>  在以上图中，首先是前向过程，对图像$x_0$加噪得到一系列$x_1$,$x_2$,…,$x_T$,最后$x_T$接近高斯噪声；然后是逆向过程，从$x_T$到$x_0$的去噪过程，也称为图像生成过程。</p>
+<h2 id="1-总体流程"><a href="#1-总体流程" class="headerlink" title="1 总体流程"></a>1 总体流程</h2><h3 id="1-1-前向过程"><a href="#1-1-前向过程" class="headerlink" title="1.1 前向过程"></a>1.1 前向过程</h3><p>  对图像加噪的方式，DDPM采用的是对图像和噪声$\epsilon_{t-1}\sim \mathcal{N}(0,1)$，进行以下公式的加权求和：</p>
+<script type="math/tex; mode=display">
+x_t=\sqrt{1-\beta_t}x_{t-1}+\sqrt{\beta_t}\epsilon_{t-1}\\</script><p>  $\beta_t$是每一步加噪使用的方差，在实际上进行加噪时，起始时使用的方差比较小，随着加噪步骤增加，方差会逐渐增大。在 DDPM 的原文中，使用的方差是从 $β_1=10^{-4}$ 随加噪时间步线性增大到 $β_T=0.02$。这个过程也可以从反向进行理解，即去噪时先去掉比较大的噪音得到图像的雏形，再去掉小噪音进行细节的微调。</p>
+<p>  上述形式其实算是<code>概率分布的重参数化形式</code>，而为直观理解噪声分布，可以将其还原为是对$\mathcal{N}(0,1)$乘，又加，于是得到下式：    </p>
+<script type="math/tex; mode=display">
 q(x_t|x_{t-1})=\mathcal{N}(x_t;\sqrt{1-\beta_t}x_{t-1},\beta_tI)\\
-q(x_{1:T}|x_0)=\prod_{t=1}^Tq(x_t|x_{t-1}),
-\]</span> 根据马尔可夫过程，每个时间步的<span
-class="math inline">\(x_t\)</span>只与<span
-class="math inline">\(x_{t-1}\)</span>有关。每次加噪都是独立的状态，故可以将每个状态连乘，表示为<span
-class="math inline">\(x_0\)</span>到<span
-class="math inline">\(x_{1:T}\)</span>的加噪形式。</p>
-<p><strong>而为了继续简化</strong>，可以将公式中的<span
-class="math inline">\(x_{t-1}\)</span>展开： <span
-class="math display">\[
+q(x_{1:T}|x_0)=\prod_{t=1}^Tq(x_t|x_{t-1}),</script><p>  根据马尔可夫过程，每个时间步的$x<em>t$只与$x</em>{t-1}$有关。每次加噪都是独立的状态，故可以将每个状态连乘，表示为$x<em>0$到$x</em>{1:T}$的加噪形式。</p>
+<p>  <strong>而为了继续简化</strong>，可以将公式中的$x_{t-1}$展开：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-x_t&amp;=\sqrt{1-\beta_t}x_{t-1}+\sqrt{\beta_t}\epsilon_{t-1}\\
-   &amp;=\sqrt{1-\beta_t}(\sqrt{1-\beta_{t-1}}x_{t-2}+\sqrt{\beta_{t-1}}\epsilon_{t-2})+\sqrt{\beta_t}\epsilon_{t-1}\\
-   &amp;=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}}\epsilon_{t-2}+\sqrt{\beta_t}\epsilon_{t-1}\\
-\end{aligned}
-\]</span> <span class="math inline">\(\epsilon_{t-1}\)</span>和<span
-class="math inline">\(\epsilon_{t-2}\)</span>是同分布<span
-class="math inline">\(\mathcal{N}(0,1)\)</span>，</p>
-<p>由高斯分布的线性组合知识，<span
-class="math inline">\(a\epsilon_{t-1}+b\epsilon_{t-2}\sim\mathcal{N}(\mu_1+\mu_2,a^2\sigma_1^2+b^2\sigma_2^2)\)</span>(此处<span
-class="math inline">\(\mu_1,\mu_2=0\)</span>,<span
-class="math inline">\(\sigma_1,\sigma_2=1\)</span>)，</p>
-<p>对于一个标准正态分布<span class="math inline">\(\bar
-\epsilon_{t-2}\)</span>，需要乘以<span
-class="math inline">\(\sqrt{\sigma}\)</span>(此处是<span
-class="math inline">\(\sqrt{a^2+b^2}\)</span>)才能得到<span
-class="math inline">\(\mathcal{N}(0,\sigma)\)</span>(此处是<span
-class="math inline">\(a^2+b^2\)</span>)，</p>
-于是可以进行合并： <span class="math display">\[
+x_t&=\sqrt{1-\beta_t}x_{t-1}+\sqrt{\beta_t}\epsilon_{t-1}\\
+   &=\sqrt{1-\beta_t}(\sqrt{1-\beta_{t-1}}x_{t-2}+\sqrt{\beta_{t-1}}\epsilon_{t-2})+\sqrt{\beta_t}\epsilon_{t-1}\\
+   &=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}}\epsilon_{t-2}+\sqrt{\beta_t}\epsilon_{t-1}\\
+\end{aligned}</script><p>  $\epsilon<em>{t-1}$和$\epsilon</em>{t-2}$是同分布$\mathcal{N}(0,1)$，</p>
+<p>  由高斯分布的线性组合知识，$a\epsilon<em>{t-1}+b\epsilon</em>{t-2}\sim\mathcal{N}(\mu_1+\mu_2,a^2\sigma_1^2+b^2\sigma_2^2)$(此处$\mu_1,\mu_2=0$,$\sigma_1,\sigma_2=1$)，</p>
+<p>  对于一个标准正态分布$\bar \epsilon_{t-2}$，需要乘以$\sqrt{\sigma}$(此处是$\sqrt{a^2+b^2}$)才能得到$\mathcal{N}(0,\sigma)$(此处是$a^2+b^2$)，</p>
+<p>  于是可以进行合并：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-   x_t&amp;=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}}\epsilon_{t-2}+\sqrt{\beta_t}\epsilon_{t-1}\\
-      &amp;=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}+\beta_t}\bar
-\epsilon_{t-2}\\
-      &amp;=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{1-(1-\beta_t)(1-\beta_{t-1})}\bar
-\epsilon_{t-2}
-\end{aligned}
-\]</span> 令<span class="math inline">\(\alpha_t=1-\beta_t,\bar
-\alpha_t=\prod_{i=1}^t\alpha_i\)</span>： $$
-<span class="math display">\[\begin{aligned}
-x_t&amp;=\sqrt{\alpha_t\alpha_{t-1}}x_{t-2}+\sqrt{1-\alpha_t\alpha_{t-1}}\bar
-\epsilon_{t-2}\\
-    &amp;=···\\
-    &amp;=\sqrt{\bar \alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon
+   x_t&=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}}\epsilon_{t-2}+\sqrt{\beta_t}\epsilon_{t-1}\\
+      &=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{(1-\beta_t)\beta_{t-1}+\beta_t}\bar \epsilon_{t-2}\\
+      &=\sqrt{(1-\beta_t)(1-\beta_{t-1})}x_{t-2}+\sqrt{1-(1-\beta_t)(1-\beta_{t-1})}\bar \epsilon_{t-2}
+\end{aligned}</script><p>  令$\alpha<em>t=1-\beta_t,\bar \alpha_t=\prod</em>{i=1}^t\alpha_i$：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+x_t&=\sqrt{\alpha_t\alpha_{t-1}}x_{t-2}+\sqrt{1-\alpha_t\alpha_{t-1}}\bar \epsilon_{t-2}\\
+    &=···\\
+    &=\sqrt{\bar \alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon
 
-\end{aligned}\]</span>
-<p>$$ 从推导结果中，可以发现，只需给定<span
-class="math inline">\(x_0\)</span>和加噪的时间步<span
-class="math inline">\(t\)</span>，就可以直接一步得到<span
-class="math inline">\(x_t\)</span>。</p>
-<p>同理，我们可以将其化为概率分布形式： <span class="math display">\[
-q(x_t|x_0)\sim \mathcal{N} (\sqrt{\bar \alpha_t}x_0,(1-\bar \alpha_t)I)
-\]</span> 在设计过程中，为了使得最后结果足够接近噪声，故会把<span
-class="math inline">\(\bar \alpha_t\)</span>设置为一个极小的值。</p>
-<h3 id="逆向过程">1.2 逆向过程</h3>
-<p>从<span class="math inline">\(x_t\)</span>逐步还原为<span
-class="math inline">\(x_0\)</span>，显然是一个条件概率，(此处不能一步还原，因为马尔可夫性质)，由贝叶斯得：
-<span class="math display">\[
-q(x_{t-1}|x_t)=\frac{q(x_t|x_{t-1})q(x_{t-1})}{q(x_t)}
-\]</span> <span
-class="math inline">\(q(x_t|x_{t-1})\)</span>是已知的，<span
-class="math inline">\(x_t=\sqrt{1-\beta_t}x_{t-1}+\sqrt{\beta_t}\epsilon_{t-1}\\\)</span>，而对于<span
-class="math inline">\(q(x_{t-1}),q(x_t)\)</span>，则需要引入<span
-class="math inline">\(x_0\)</span>来辅助求解。</p>
-<p><strong>能直接引入<span
-class="math inline">\(x_0\)</span>的原因:</strong> 马尔可夫过程，<span
-class="math inline">\(x_t\)</span>只与<span
-class="math inline">\(x_{t-1}\)</span>有关，与<span
-class="math inline">\(x_0\)</span>无关。 <span class="math display">\[
-q(x_{t-1}|x_t,x_0)=\frac{q(x_t|x_{t-1},x_0)q(x_{t-1}|x_0)}{q(x_t|x_0)}
-\]</span> 根据上述<span class="math inline">\(x_t=\sqrt{\bar
-\alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon\)</span>，<span
-class="math inline">\(q(x_{t-1}|x_0),q(x_t|x_0)\)</span>可解，则此时问题转化为求解未知数<span
-class="math inline">\(x_0\)</span>。</p>
-<p>那么<span class="math inline">\(x_0\)</span>是可以用前向过程的<span
-class="math inline">\(x_t\)</span>反推的，于是具体的公式推导如下：</p>
-首先代入高斯公式，此处认为结果仍为高斯分布，所以核心还是求解<span
-class="math inline">\(\mu\)</span>和<span
-class="math inline">\(\sigma\)</span>(因为在时间步t间隔十分小时，可以假设认为每一次的结果都是高斯分布)：
-$$
-<span class="math display">\[\begin{aligned}
-q(x_t|x_{t-1})&amp;\sim\mathcal{N}(x_t;\sqrt{1-\beta_t}x_{t-1},\beta_tI)\\
-q(x_{t-1}|x_0)&amp;\sim\mathcal{N} (x_{t-1};\sqrt{\bar
-\alpha_{t-1}}x_0,(1-\bar \alpha_{t-1})I)\\
-q(x_t|x_0)&amp;\sim \mathcal{N} (x_t;\sqrt{\bar \alpha_t}x_0,(1-\bar
-\alpha_t)I)\\
-\mathcal{N}&amp;=\frac{1}{\sigma\sqrt{2\pi}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+\end{aligned}</script><p>  从推导结果中，可以发现，只需给定$x_0$和加噪的时间步$t$，就可以直接一步得到$x_t$。</p>
+<p>  同理，我们可以将其化为概率分布形式：</p>
+<script type="math/tex; mode=display">
+q(x_t|x_0)\sim \mathcal{N} (\sqrt{\bar \alpha_t}x_0,(1-\bar \alpha_t)I)</script><p>  在设计过程中，为了使得最后结果足够接近噪声，故会把$\bar \alpha_t$设置为一个极小的值。</p>
+<h3 id="1-2-逆向过程"><a href="#1-2-逆向过程" class="headerlink" title="1.2 逆向过程"></a>1.2 逆向过程</h3><p>  从$x_t$逐步还原为$x_0$，显然是一个条件概率，(此处不能一步还原，因为马尔可夫性质)，由贝叶斯得：</p>
+<script type="math/tex; mode=display">
+q(x_{t-1}|x_t)=\frac{q(x_t|x_{t-1})q(x_{t-1})}{q(x_t)}</script><p>  $q(x<em>t|x</em>{t-1})$是已知的，$x<em>t=\sqrt{1-\beta_t}x</em>{t-1}+\sqrt{\beta<em>t}\epsilon</em>{t-1}\$，而对于$q(x_{t-1}),q(x_t)$，则需要引入$x_0$来辅助求解。</p>
+<p>  <strong>能直接引入$x_0$的原因:</strong> 马尔可夫过程，$x<em>t$只与$x</em>{t-1}$有关，与$x_0$无关。</p>
+<script type="math/tex; mode=display">
+q(x_{t-1}|x_t,x_0)=\frac{q(x_t|x_{t-1},x_0)q(x_{t-1}|x_0)}{q(x_t|x_0)}</script><p>  根据上述$x<em>t=\sqrt{\bar \alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon$，$q(x</em>{t-1}|x_0),q(x_t|x_0)$可解，则此时问题转化为求解未知数$x_0$。</p>
+<p>  那么$x_0$是可以用前向过程的$x_t$反推的，于是具体的公式推导如下：</p>
+<p>  首先代入高斯公式，此处认为结果仍为高斯分布，所以核心还是求解$\mu$和$\sigma$(因为在时间步t间隔十分小时，可以假设认为每一次的结果都是高斯分布)：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+q(x_t|x_{t-1})&\sim\mathcal{N}(x_t;\sqrt{1-\beta_t}x_{t-1},\beta_tI)\\
+q(x_{t-1}|x_0)&\sim\mathcal{N} (x_{t-1};\sqrt{\bar \alpha_{t-1}}x_0,(1-\bar \alpha_{t-1})I)\\
+q(x_t|x_0)&\sim \mathcal{N} (x_t;\sqrt{\bar \alpha_t}x_0,(1-\bar \alpha_t)I)\\
+\mathcal{N}&=\frac{1}{\sigma\sqrt{2\pi}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
 
-\end{aligned}\]</span>
-<span class="math display">\[
-  代入可得：
-\]</span>
-<span class="math display">\[\begin{aligned}
-q(x_{t-1}|x_t,x_0)\propto
-exp(-\frac{1}{2}[(\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar
-\alpha_{t-1}})x_{t-1}^2-(\frac{2\sqrt{\alpha_t}}{\beta_t}x_t+\frac{2\sqrt{\bar
-\alpha_{t-1}}}{1-\bar \alpha_{t-1}}x_0)x_{t-1}+C(x_t,x_0)])
-\end{aligned}\]</span>
-<p><span class="math display">\[
-  比较正态分布公式：
-\]</span> exp(-(x^2-x+)) <span class="math display">\[
-  对应位置相等，则可以发现：
-\]</span> =+\ =x_t+x_0 <span class="math display">\[
-  $\sigma$显然是一个定值，而$\mu$则需要$x_0$的求解，利用$x_t=\sqrt{\bar
-\alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon$ ，反推$x_0$可得：
-\]</span> =(x_t-) <span class="math display">\[
-  最后结果为：
-\]</span> q(x_{t-1}|x_t)=(x_{t-1};(x_t-),^2) $$ 此处的<span
-class="math inline">\(\overline
-\epsilon\)</span>是无法得知的，在反向过程中我们并不知道在前向过程中加入的噪声是具体哪一个，因此通常需要采用UNet来预测这个噪声，故会有denoiser的出现，其接收输入<span
-class="math inline">\(x_t\)</span>和时间步<span
-class="math inline">\(t\)</span>，可以输出噪声预测结果<span
-class="math inline">\(\epsilon_t(x_t,t)\)</span></p>
-<h2 id="训练">2 训练</h2>
-<p>在原文中，损失函数的设定是通过负对数似然函数实现，其基本思想是希望实际分布与所定义的分布接近。</p>
-<p>化简到最后的形式是</p>
-<figure>
-<img src="./(一)扩散模型学习——DDPM/image-20241220212920299.png"
-alt="损失函数" />
-<figcaption aria-hidden="true">损失函数</figcaption>
-</figure>
-<p>损失函数描述了前向和逆向过程的形式化表示。两个KL散度和一项并没有处理的项(只是用于添加随机性，直接采用一个独立的高斯分布取样)。</p>
-<p>这两个KL散度的计算，只需知道<span
-class="math inline">\(q(x_T|x_0),q(x_{t-1}|x_t,x_0)\)</span>，根据上述的公式是可以求解的。</p>
-<figure>
-<img src="./(一)扩散模型学习——DDPM/image-20241220212647050.png"
-alt="训练" />
-<figcaption aria-hidden="true">训练</figcaption>
-</figure>
-<p>训练的目标：预测噪声<span
-class="math inline">\(\epsilon_t(x_t,t)\)</span></p>
-<p>步骤：从数据集中采样取得<span
-class="math inline">\(x_0\)</span>,均匀分布取<span
-class="math inline">\(t\)</span>,标准正态分布取<span
-class="math inline">\(\epsilon\)</span></p>
-<p>​ 根据<span class="math inline">\(x_t=\sqrt{\bar
-\alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon\)</span>，然后把<span
-class="math inline">\(x_t\)</span>噪声图和<span
-class="math inline">\(t\)</span>输入到网络中进行预测<span
-class="math inline">\(\epsilon_\theta\)</span>，最后计算实际噪声和预测噪声的L2损失，梯度下降优化。</p>
-<p>此处相当于是训练了一个加噪器，能够根据每一张图像，对其处理得到一个专门的近似高斯噪声的噪声图。</p>
-<h2 id="采样去噪">3 采样(去噪)</h2>
-<figure>
-<img src="./(一)扩散模型学习——DDPM/image-20241220214035858.png"
-alt="采样" />
-<figcaption aria-hidden="true">采样</figcaption>
-</figure>
-<p>从标准正态分布取样得<span
-class="math inline">\(x_T\)</span>作为初始图，重复T步去噪，每一步都在逐步求解分布<span
-class="math inline">\(q(x_{t-1}|x_t)\)</span>，此时<span
-class="math inline">\(\overline \epsilon\)</span>已经训练出来， <span
-class="math display">\[
-q(x_{t-1}|x_t)=\mathcal{N}(x_{t-1};\frac{1}{\sqrt{\alpha_t}}(x_t-\frac{1-\alpha_t}{\sqrt{1-\bar
-\alpha_t}}\overline \epsilon),\sigma_t^2)
-\]</span> 采用重参数化的技巧，从<span
-class="math inline">\(\mathcal{N}(\mu,\sigma^2)\)</span>采样可以实现为从<span
-class="math inline">\(\mathcal{N}(0,1)\)</span>采样<span
-class="math inline">\(\epsilon\)</span>，然后再算<span
-class="math inline">\(\mu+\sigma\epsilon\)</span>。此时的结果便是要求的<span
-class="math inline">\(x_{t-1}\)</span></p>
-<p>最后加的<span
-class="math inline">\(\sigma_tz\)</span>只是为了增加随机性，<span
-class="math inline">\(\sigma_t\)</span>是未知的，作者将其设置为一个定值。</p>
-<h2 id="参考">参考</h2>
-<blockquote>
-<p><a
-target="_blank" rel="noopener" href="https://littlenyima.github.io/posts/13-denoising-diffusion-probabilistic-models/">笔记｜扩散模型（一）：DDPM
-理论与实现 | 極東晝寢愛好家</a></p>
-<p>[<a
-target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1ic41157Vf?spm_id_from=333.788.videopod.sections&amp;vd_source=448358f43a4bb5339069f63d9e0b8ac0">论文速览]Denoising
-Diffusion Implicit Models / DDIM[2010.02502]_哔哩哔哩_bilibili</a></p>
-<p><a
-target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1KpgLe6E8A/?spm_id_from=333.999.0.0&amp;vd_source=448358f43a4bb5339069f63d9e0b8ac0">【AI知识分享—威力加强版】理解扩散模型两大问题：为什么DDPM、DDIM中不能一步求得X0的值？为什么DDIM不能跳步过大？_哔哩哔哩_bilibili</a></p>
+\end{aligned}</script><p>  代入可得：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+q(x_{t-1}|x_t,x_0)\propto exp(-\frac{1}{2}[(\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar \alpha_{t-1}})x_{t-1}^2-(\frac{2\sqrt{\alpha_t}}{\beta_t}x_t+\frac{2\sqrt{\bar \alpha_{t-1}}}{1-\bar \alpha_{t-1}}x_0)x_{t-1}+C(x_t,x_0)])
+\end{aligned}</script><p>  比较正态分布公式：</p>
+<script type="math/tex; mode=display">
+exp(-\frac{1}{2}(\frac{1}{\sigma^2}x^2-\frac{2\mu}{\sigma^2}x+\frac{\mu^2}{\sigma^2}))</script><p>  对应位置相等，则可以发现：</p>
+<script type="math/tex; mode=display">
+\frac{1}{\sigma^2}=\frac{\alpha_t}{\beta_t}+\frac{1}{1-\bar \alpha_{t-1}}\\
+\frac{2\mu}{\sigma^2}=\frac{2\sqrt{\alpha_t}}{\beta_t}x_t+\frac{2\sqrt{\bar \alpha_{t-1}}}{1-\bar \alpha_{t-1}}x_0</script><p>  $\sigma$显然是一个定值，而$\mu$则需要$x_0$的求解，利用$x_t=\sqrt{\bar \alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon$ ，反推$x_0$可得：</p>
+<script type="math/tex; mode=display">
+\mu=\frac{1}{\sqrt{\alpha_t}}(x_t-\frac{1-\alpha_t}{\sqrt{1-\bar \alpha_t}}\overline \epsilon)</script><p>  最后结果为：</p>
+<script type="math/tex; mode=display">
+q(x_{t-1}|x_t)=\mathcal{N}(x_{t-1};\frac{1}{\sqrt{\alpha_t}}(x_t-\frac{1-\alpha_t}{\sqrt{1-\bar \alpha_t}}\overline \epsilon),\sigma^2)</script><p>  此处的$\overline \epsilon$是无法得知的，在反向过程中我们并不知道在前向过程中加入的噪声是具体哪一个，因此通常需要采用UNet来预测这个噪声，故会有denoiser的出现，其接收输入$x_t$和时间步$t$，可以输出噪声预测结果$\epsilon_t(x_t,t)$</p>
+<h2 id="2-训练"><a href="#2-训练" class="headerlink" title="2 训练"></a>2 训练</h2><p>  在原文中，损失函数的设定是通过负对数似然函数实现，其基本思想是希望实际分布与所定义的分布接近。</p>
+<p>  化简到最后的形式是</p>
+<p><img src="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/(一" alt="损失函数">扩散模型学习——DDPM/image-20241220212920299.png)</p>
+<p>  损失函数描述了前向和逆向过程的形式化表示。两个KL散度和一项并没有处理的项(只是用于添加随机性，直接采用一个独立的高斯分布取样)。</p>
+<p>  这两个KL散度的计算，只需知道$q(x<em>T|x_0),q(x</em>{t-1}|x_t,x_0)$，根据上述的公式是可以求解的。</p>
+<p><img src="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/(一" alt="训练">扩散模型学习——DDPM/image-20241220212647050.png)</p>
+<p>  训练的目标：预测噪声$\epsilon_t(x_t,t)$</p>
+<p>  步骤：从数据集中采样取得$x_0$,均匀分布取$t$,标准正态分布取$\epsilon$</p>
+<p>​       根据$x<em>t=\sqrt{\bar \alpha_t}x_0+\sqrt{1-\bar \alpha_t}\epsilon$，然后把$x_t$噪声图和$t$输入到网络中进行预测$\epsilon</em>\theta$，最后计算实际噪声和预测噪声的L2损失，梯度下降优化。</p>
+<p>  此处相当于是训练了一个加噪器，能够根据每一张图像，对其处理得到一个专门的近似高斯噪声的噪声图。</p>
+<h2 id="3-采样-去噪"><a href="#3-采样-去噪" class="headerlink" title="3 采样(去噪)"></a>3 采样(去噪)</h2><p><img src="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/(一" alt="采样">扩散模型学习——DDPM/image-20241220214035858.png)</p>
+<p>  从标准正态分布取样得$x<em>T$作为初始图，重复T步去噪，每一步都在逐步求解分布$q(x</em>{t-1}|x_t)$，此时$\overline \epsilon$已经训练出来，</p>
+<script type="math/tex; mode=display">
+q(x_{t-1}|x_t)=\mathcal{N}(x_{t-1};\frac{1}{\sqrt{\alpha_t}}(x_t-\frac{1-\alpha_t}{\sqrt{1-\bar \alpha_t}}\overline \epsilon),\sigma_t^2)</script><p>  采用重参数化的技巧，从$\mathcal{N}(\mu,\sigma^2)$采样可以实现为从$\mathcal{N}(0,1)$采样$\epsilon$，然后再算$\mu+\sigma\epsilon$。此时的结果便是要求的$x_{t-1}$</p>
+<p>  最后加的$\sigma_tz$只是为了增加随机性，$\sigma_t$是未知的，作者将其设置为一个定值。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://littlenyima.github.io/posts/13-denoising-diffusion-probabilistic-models/">笔记｜扩散模型（一）：DDPM 理论与实现 | 極東晝寢愛好家</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1ic41157Vf?spm_id_from=333.788.videopod.sections&amp;vd_source=448358f43a4bb5339069f63d9e0b8ac0">[论文速览]Denoising Diffusion Implicit Models / DDIM[2010.02502]_哔哩哔哩_bilibili</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1KpgLe6E8A/?spm_id_from=333.999.0.0&amp;vd_source=448358f43a4bb5339069f63d9e0b8ac0">【AI知识分享—威力加强版】理解扩散模型两大问题：为什么DDPM、DDIM中不能一步求得X0的值？为什么DDIM不能跳步过大？_哔哩哔哩_bilibili</a></p>
 </blockquote>
-</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heishuini.github.io">heishuini</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heishuini.github.io/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/">https://heishuini.github.io/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heishuini.github.io" target="_blank">Heishuini's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/diffusion-model/">diffusion model</a></div><div class="post-share"><div class="social-share" data-image="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2024/12/19/environment-build/" title="environment build"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">environment build</div></div><div class="info-2"><div class="info-item-1">博客搭建  from: LittleNyima/littlenyima.github.io: LittleNyima's personal page nodejs安装：【Node】node.js安装与配置（详细步骤）-阿里云开发者社区 hexo使用教程： 使用 Hexo+GitHub 搭建个人免费博客教程（小白向） - 知乎  进入博客所在目录，右键打开 Git Bash Here，创建博文： 1hexo new &quot;My New Post&quot; 然后 source 文件夹中会出现一个 My New Post.md 文件，就可以使用 Markdown 编辑器在该文件中撰写文章了。 写完后运行下面代码将文章渲染并部署到 GitHub Pages 上完成发布。以后每次发布文章都是这两条命令。 12hexo g   # 生成页面hexo d   # 部署发布 常用命令： 12345678hexo new &quot;name&quot;       # 新建文章hexo new page &quot;name&quot;  #...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">heishuini</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>关注我</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">这是我的博客</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">1 总体流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E5%90%91%E8%BF%87%E7%A8%8B"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 前向过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%86%E5%90%91%E8%BF%87%E7%A8%8B"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 逆向过程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%AD%E7%BB%83"><span class="toc-number">2.</span> <span class="toc-text">2 训练</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%87%E6%A0%B7%E5%8E%BB%E5%99%AA"><span class="toc-number">3.</span> <span class="toc-text">3 采样(去噪)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/" title="(一)扩散模型学习——DDPM">(一)扩散模型学习——DDPM</a><time datetime="2024-12-19T08:02:42.000Z" title="发表于 2024-12-19 16:02:42">2024-12-19</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/environment-build/" title="environment build">environment build</a><time datetime="2024-12-19T07:18:42.000Z" title="发表于 2024-12-19 15:18:42">2024-12-19</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By heishuini</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.2.2"></script><script src="/js/main.js?v=5.2.2"></script><div class="js-pjax"><script>(() => {
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heishuini.github.io">heishuini</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heishuini.github.io/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/">https://heishuini.github.io/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heishuini.github.io" target="_blank">Heishuini's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/diffusion-model/">diffusion model</a></div><div class="post-share"><div class="social-share" data-image="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2024/12/19/environment-build/" title="environment build"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">environment build</div></div><div class="info-2"><div class="info-item-1">博客搭建 from: LittleNyima/littlenyima.github.io: LittleNyima’s personal page nodejs安装：【Node】node.js安装与配置（详细步骤）-阿里云开发者社区 hexo使用教程： 使用 Hexo+GitHub 搭建个人免费博客教程（小白向） - 知乎  进入博客所在目录，右键打开 Git Bash Here，创建博文： 1hexo new &quot;My New Post&quot; 然后 source 文件夹中会出现一个 My New Post.md 文件，就可以使用 Markdown 编辑器在该文件中撰写文章了。 写完后运行下面代码将文章渲染并部署到 GitHub Pages 上完成发布。以后每次发布文章都是这两条命令。 12hexo g   # 生成页面hexo d   # 部署发布 常用命令： 12345678hexo new &quot;name&quot;       # 新建文章hexo new page &quot;name&quot;  # 新建页面hexo g            ...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">heishuini</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>关注我</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">这是我的博客</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E6%80%BB%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">1 总体流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%89%8D%E5%90%91%E8%BF%87%E7%A8%8B"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 前向过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E9%80%86%E5%90%91%E8%BF%87%E7%A8%8B"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 逆向过程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E8%AE%AD%E7%BB%83"><span class="toc-number">2.</span> <span class="toc-text">2 训练</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E9%87%87%E6%A0%B7-%E5%8E%BB%E5%99%AA"><span class="toc-number">3.</span> <span class="toc-text">3 采样(去噪)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/" title="(一)扩散模型学习——DDPM">(一)扩散模型学习——DDPM</a><time datetime="2024-12-19T08:02:42.000Z" title="发表于 2024-12-19 16:02:42">2024-12-19</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/environment-build/" title="environment build">environment build</a><time datetime="2024-12-19T07:18:42.000Z" title="发表于 2024-12-19 15:18:42">2024-12-19</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2024 By heishuini</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.2.2"></script><script src="/js/main.js?v=5.2.2"></script><div class="js-pjax"><script>(() => {
   const runMermaid = ele => {
     window.loadMermaid = true
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
