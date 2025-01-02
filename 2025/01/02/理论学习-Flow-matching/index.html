@@ -1,0 +1,706 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>理论学习|Flow matching | Heishuini's Blog</title><meta name="author" content="heishuini"><meta name="copyright" content="heishuini"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="《Flow matching for generative modeling》2023    对于图像生成，希望让模型学习数据的分布，但很难表示出一个适合采样的复杂分布。   我们会把学习一个分布的问题转换成学习一个简单好采样的分布到复杂分布的映射。一般这个简单分布都是标准正态分布。   此时问题便转化为学习映射。   近年来包括扩散模型在内的几类生成模型用一种巧妙的方法来学习这种映">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理论学习|Flow matching">
+<meta property="og:url" content="https://heishuini.github.io/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/index.html">
+<meta property="og:site_name" content="Heishuini&#39;s Blog">
+<meta property="og:description" content="《Flow matching for generative modeling》2023    对于图像生成，希望让模型学习数据的分布，但很难表示出一个适合采样的复杂分布。   我们会把学习一个分布的问题转换成学习一个简单好采样的分布到复杂分布的映射。一般这个简单分布都是标准正态分布。   此时问题便转化为学习映射。   近年来包括扩散模型在内的几类生成模型用一种巧妙的方法来学习这种映">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png">
+<meta property="article:published_time" content="2025-01-02T05:19:55.000Z">
+<meta property="article:modified_time" content="2025-01-02T08:10:04.439Z">
+<meta property="article:author" content="heishuini">
+<meta property="article:tag" content="diffusion model">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heishuini.github.io/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.2.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '理论学习|Flow matching',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  isShuoshuo: false
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">5</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Heishuini's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">理论学习|Flow matching</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 列表</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">理论学习|Flow matching</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-01-02T05:19:55.000Z" title="发表于 2025-01-02 13:19:55">2025-01-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-01-02T08:10:04.439Z" title="更新于 2025-01-02 16:10:04">2025-01-02</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><blockquote>
+<p>《Flow matching for generative modeling》2023</p>
+</blockquote>
+<p>  对于图像生成，希望让模型学习数据的分布，但很难表示出一个适合采样的复杂分布。</p>
+<p>  我们会把<strong>学习一个分布的问题转换成学习一个简单好采样的分布到复杂分布的映射</strong>。一般这个简单分布都是标准正态分布。</p>
+<p>  此时问题便转化为学习映射。</p>
+<p>  近年来包括扩散模型在内的几类生成模型用一种巧妙的方法来学习这种映射：从纯噪声（标准正态分布里的数据）到真实数据的映射很难表示，但从真实数据到纯噪声的逆映射很容易表示。</p>
+<p>  先人工定义从图像数据集data到噪声noise的变换路线(加噪)，再让模型学习逆路线。让噪声数据沿着逆路线走，就实现了图像生成。</p>
+<p><code>Flow-matching 学习路径</code></p>
+<p>  ODE -&gt; flow -&gt; normalizing flow -&gt; continuous normalizing
+flow(CNF) -&gt; flow matching -&gt; rectified flow</p>
+<h2 id="基础概念">基础概念</h2>
+<p>  在本文中，首先需要了解的概念及其彼此关系，流<span class="math inline">\(\phi_t\)</span>，向量场<span class="math inline">\(v_t\)</span>，概率密度路径<span class="math inline">\(P_t\)</span>。</p>
+<p>  注意点: 本篇文章中，<span class="math inline">\(x_1\)</span>是样本，<span class="math inline">\(x_0\)</span>是噪声。</p>
+<p><code>向量场v</code></p>
+<p>  向量场<span class="math inline">\(\{v_t\}_{t∈[0,1]}\)</span>,
+定义了一个速度场来表示从起始点<span class="math inline">\(x_1\)</span>到目标点<span class="math inline">\(x_0\)</span>的传送过程，从而产生轨迹<span class="math inline">\(\varphi\)</span>。</p>
+<p>  简单理解为速度与位置(路程) <span class="math inline">\(\frac{dx}{dt}=-v_t(x_t)\)</span>，负号是因为定义的<span class="math inline">\(v_t\)</span>的<span class="math inline">\(t∈[0,1]\)</span>，而推导时做的是采样，故是从(1-&gt;0),</p>
+<p><code>流flow</code></p>
+<p>  流，在此处的理解是映射，是运动的轨迹。</p>
+<blockquote>
+<p>但也有别的理解认为，不同的初始<span class="math inline">\(x\)</span>会在流<span class="math inline">\(v\)</span>的作用下产生不同的轨迹<span class="math inline">\(\varphi\)</span>。<span class="math inline">\(\varphi\)</span>描述的轨迹，则是ODE的一个个解；<span class="math inline">\(v\)</span>描述的每次变化，则是flow。</p>
+</blockquote>
+<p>  为了后文的统一描述，此处认为轨迹<span class="math inline">\(\varphi\)</span>，就是要学习的映射<span class="math inline">\(\phi\)</span>。</p>
+<p><code>场与流的关系</code></p>
+<p>  向量场<span class="math inline">\(v:[0,1]×R^d\rightarrow
+R^d\)</span>，轨迹<span class="math inline">\(\phi_t(x):[0,1]×R^d
+\rightarrow R^d\)</span></p>
+<p>  用向量场构建随时间变化的映射，ODE形式，求解轨迹<span class="math inline">\(\phi_t(x)\)</span>： <span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}\phi_t(x)&amp;=v_t(\phi_t(x))\\
+\phi_0(x)&amp;=x\\
+\end{aligned}
+\]</span>   <span class="math inline">\(v_t\)</span>一般用神经网络逼近学习<span class="math inline">\(v_t(x_t;\theta)\)</span></p>
+<p><code>概率密度路径Pt与流、场的关系</code></p>
+<p>概率密度路径<span class="math inline">\(p_t(x):[0,1]×R^d\rightarrow  R_{&gt;0}\)</span>，<span class="math inline">\(p\)</span>是和<span class="math inline">\(t,x\)</span>有关，故<span class="math inline">\(t∈[0,1]，x∈R^d\)</span>。
+【积分p从0到1的值是1】</p>
+<p>连续性方程：检验向量场<span class="math inline">\(v_t\)</span>是否能产生能从起始点到终止点的概率密度路径<span class="math inline">\(p_t\)</span>，若要产生，需满足偏微分方程(充要)：
+<span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}p_t(x)+div(p_t(x)v_t(x))=0\\
+其中，x=(x^1,...,x^d)，
+发散算子div=\sum_{i=1}^d\frac{\partial}{\partial x^i}
+\end{aligned}
+\]</span></p>
+<blockquote>
+<p>[!NOTE]</p>
+<p>推导连续性方程：<strong>SDE与FPK公式</strong></p>
+<p>SDE(随机微分方程)标准形式：<span class="math inline">\(dy=f_tdt+g_tdw\)</span>，<span class="math inline">\(t\)</span>是时间，<span class="math inline">\(f_t\)</span>是漂移系数，<span class="math inline">\(g_t\)</span>是扩散系数，<span class="math inline">\(dw\)</span>是维纳过程，解是<span class="math inline">\(y_t\)</span>描述的是一个随机过程。</p>
+<ul>
+<li>维纳过程：正态，独立增量 <span class="math inline">\(dw=w(t+\Delta
+t)-w(t)\sim\mathcal{N}(0,\Delta tI)\)</span>,</li>
+</ul>
+<p>​ 重参数化，<span class="math inline">\(dw=0+\sqrt{\Delta
+t}\epsilon\)</span>，<span class="math inline">\(\epsilon\sim
+\mathcal{N}(0,1)\)</span>，相当于是一个<u>高斯噪声项</u></p>
+<p>既然<span class="math inline">\(y_t\)</span>是随机过程，就有其对应的概率密度<span class="math inline">\(p_t\)</span>，而Fokker-Planck(FPK)就是用于得到<span class="math inline">\(p_t\)</span>（去掉噪声项）： <span class="math display">\[
+\begin{aligned}
+FPK:\frac{dp_t}{dt}=-div(f_tp_t)+\frac{g_t^2}{2}\Delta p_t\\
+\Delta是拉普拉斯算子(对y)，等价于div\nabla,\nabla是求梯度的(对y)\\
+\end{aligned}
+\]</span> 根据已知的FPK公式，推导连续性方程(div搞一起，提取<span class="math inline">\(p_t\)</span>)：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241229162221606.png" alt="连续性方程推导">
+<figcaption aria-hidden="true">连续性方程推导</figcaption>
+</figure>
+<p>对比一下就知道，向量场<span class="math inline">\(v_t\)</span>其实就是<span class="math inline">\(w_t=f_t-\frac{g_t^2}{2}\nabla log p_t\)</span></p>
+</blockquote>
+<h2 id="连续归一化流cnf">连续归一化流CNF</h2>
+<p><code>连续归一化流CNF</code>：用于将一个简单的分布<span class="math inline">\(p_0\)</span>(如纯噪声)，重塑为一个复杂的分布<span class="math inline">\(p_1\)</span>，通过一个前推算子<em>： <span class="math display">\[
+p_t=[\phi_t]_*p_0\\
+\]</span> 其中，</em>是一个前推算子（或称为变量变换）。</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241229170043487.png" alt="前推算子">
+<figcaption aria-hidden="true">前推算子</figcaption>
+</figure>
+<p>det是雅可比行列式：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241229165655603.png" alt="雅可比行列式">
+<figcaption aria-hidden="true">雅可比行列式</figcaption>
+</figure>
+<p><strong>CNF理解</strong>：可以看作是一个个函数的复合，如x-&gt;h1-&gt;h2-&gt;..-&gt;z，经过了<span class="math inline">\(f=f_1·f_2·...·f_k\)</span>,得到<span class="math inline">\(z=f_\theta(x)\)</span>，那么CNF就是这么一个复合函数。</p>
+<p><strong>变量变换理解</strong>：<span class="math inline">\(x_0\rightarrow
+x_1(经过\varphi)\)</span>，对应分布是<span class="math inline">\(p_0\)</span>和<span class="math inline">\(p_1\)</span>，对两个分布做积分显然有<span class="math inline">\(p_0^{(x_0)}dx_0=p_1^{(x_1)}dx_1\)</span>，于是得到<span class="math inline">\(p_1(x)=p_0(x_0)·\frac{dx_0}{dx_1}\)</span>，那如果是多维的:
+<span class="math display">\[
+p_1(x)=p_0(x_0)·|det(\frac{\partial x_0}{\partial
+x_1})|，(概率密度大于0，取绝对值)
+\]</span> 根据流的ODE形式： <span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}\phi_t(x)&amp;=v_t(\phi_t(x))\\
+\phi_0(x)&amp;=x\\
+\end{aligned}
+\]</span> 得<span class="math inline">\(x_0=\phi^{-1}(x)\)</span>,代入式子，就能知道前推算子的来源了。
+<span class="math display">\[
+p_t(x)=[\phi_t]_*p_0=p_0(\phi_t^{-1}(x))·|det(\frac{\partial
+\phi_t^{-1}(x)}{\partial x_1})|
+\]</span> 总结：</p>
+<ul>
+<li><p>场<span class="math inline">\(v(t)\)</span>，流<span class="math inline">\(\phi_t(x)\)</span>，ODE形式串联；</p></li>
+<li><p>概率密度<span class="math inline">\(p_t \leftarrow
+p_0\)</span>，前推算子串联(利用<span class="math inline">\(x_0=\phi_t^{-1}(x)\)</span>)，简单分布到复杂分布；</p></li>
+<li><p>场<span class="math inline">\(v(t)\)</span>与概率密度<span class="math inline">\(p_t\)</span>，连续性方程串联(检验向量场是否能产生概率密度路径)</p></li>
+</ul>
+<h2 id="流匹配fm的目标">流匹配FM的目标</h2>
+<h3 id="原始目标">原始目标</h3>
+<p>符号定义：</p>
+<ul>
+<li><span class="math inline">\(x_1 \sim q(x_1)\)</span>，样本数据<span class="math inline">\(x_1\)</span>，真实分布<span class="math inline">\(q\)</span>未知；</li>
+<li>概率路径<span class="math inline">\(p_{t∈[0,1]}\)</span>，设置<span class="math inline">\(p_0=p(x)\)</span>是一个简单分布。</li>
+</ul>
+<p>目标：</p>
+<p>  找到一条概率路径，使得能从<span class="math inline">\(p_0\)</span>到<span class="math inline">\(p_1\)</span>，且希望<span class="math inline">\(p_1\)</span>的分布尽可能接近真实分布<span class="math inline">\(q\)</span></p>
+<p>形式化表示：</p>
+<p>  若已知<span class="math inline">\(p_t(x)\)</span>,<span class="math inline">\(x \sim p_t(x)\)</span>，及其对应的真实向量场<span class="math inline">\(u_t(x)\)</span>，则用神经网络<span class="math inline">\(v_t\)</span>拟合<span class="math inline">\(u_t\)</span>。(只要知道场，就能知道流，概率密度)
+<span class="math display">\[
+\mathcal{L}_{FM}(\theta)=E_{t,p_t(x)}||v_t(x)-u_t(x)||^2
+\]</span>   其中，<span class="math inline">\(||x-y||=\sqrt{\sum_{i=1}^n(x_i-y_i)^2}\)</span>，<span class="math inline">\(E_{t,p_t(x)}\)</span>表示从<span class="math inline">\(p_t(x)\)</span>采样的所有点的平均误差，FM是Flow
+Matching（流匹配）的缩写。</p>
+<blockquote>
+<p><span class="math display">\[
+\mathcal{L}_{FM}(\theta)=E_{t,p_t(x)}||v_t(x)-u_t(x)||^2=\int_{t=0}^1\int_x||v_t(x)-u_t(x)||^2p_t(x)dxdt
+\]</span></p>
+<ul>
+<li><p>内层积分：对时间 t 的某一固定值，求从 <span class="math inline">\(p_{t}(x)\)</span> 中采样的 <span class="math inline">\(x\)</span> 上的误差。</p></li>
+<li><p>外层积分：对所有时间点 <span class="math inline">\(t∈[0,1]\)</span> 的误差平均化</p></li>
+</ul>
+</blockquote>
+<p><strong>面临问题</strong>：但这个假设<span class="math inline">\(p_t(x)\)</span>和<span class="math inline">\(u_t(x)\)</span>已知是很困难的，所以后面会用条件概率密度来替换。</p>
+<p>此时，已经知道了目标，那么为了能够继续优化，显然是对<span class="math inline">\(u_t(x)\)</span>的形式作各种处理。</p>
+<h3 id="构造目标路径p_tx">构造目标路径p_t(x)</h3>
+<p>采用简单的概率路径来构建目标概率路径：</p>
+<p><span class="math inline">\(x_1\)</span>是样本数据，<span class="math inline">\(p_t(x|x_1)\)</span>是条件概率路径，且满足:</p>
+<ul>
+<li><p>在<span class="math inline">\(t=0\)</span>时，<span class="math inline">\(p_0(x|x_1)=p(x)\)</span>是一个简单分布；(与<span class="math inline">\(x_1\)</span>无关)</p></li>
+<li><p>在<span class="math inline">\(t=1\)</span>时，<span class="math inline">\(p_1(x|x_1)\)</span>要如何才能接近真实分布<span class="math inline">\(q(x)\)</span>？</p>
+<p>文中设定的是类似一个脉冲的形式：<span class="math inline">\(p_1(x|x_1)=\mathcal{N}(x_1,\sigma^2I)\)</span>,<span class="math inline">\(\sigma\)</span>是很小的正数。</p></li>
+</ul>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241230150139296.png" alt="高斯脉冲函数">
+<figcaption aria-hidden="true">高斯脉冲函数</figcaption>
+</figure>
+<p>将条件概率路径进行边缘化，关注<span class="math inline">\(x\)</span>，消除变量<span class="math inline">\(x_1\)</span>，正常边缘化的公式是<span class="math inline">\(p(x)=\int p(x|z)p(z)dz\)</span>，此处做了近似：
+<span class="math display">\[
+p_t(x)=\int p_t(x|x_1)q(x_1)dx_1
+\]</span> 性质：</p>
+<ul>
+<li><span class="math inline">\(p_0(x)=\int
+p(x)q(x_1)dx_1=p(x)\)</span>(因为概率密度积分值为1)；</li>
+<li><span class="math inline">\(p_1(x)=\int
+p_1(x|x_1)q(x_1)dx_1≈q(x)\)</span>，</li>
+</ul>
+<blockquote>
+<p>为什么可以近似？<code>脉冲函数的理解</code></p>
+<p>设置t=1时是高斯函数(脉冲函数/卷积)，形式是类似狄拉克函数(x=0处值为＋∞，其他处为0)，好处是<strong>筛选性</strong>。</p>
+<p>对于一个分布<span class="math inline">\(f\)</span>，混合一个狄拉克函数<span class="math inline">\(\delta(t-x)\)</span>： <span class="math display">\[
+\int_{-∞}^{+∞}\delta(t-x_0)f(t)dt=f(x_0)
+\]</span> 推导方式，因为只有当<span class="math inline">\(t=x_0\)</span>时这个积分才有值，所以用<span class="math inline">\(f(x_0)替代f(t)\)</span>，积分值<span class="math inline">\(\delta\)</span>是1。</p>
+<p>可写作<span class="math inline">\((\delta*f)(x)\)</span>卷积，这种f和g的联合概率分布<span class="math inline">\(f(t)g(t-T)\)</span>，也称为卷积形式。</p>
+<p>回到<span class="math inline">\(p_1(x|x_1)=\mathcal{N}(x_1,\sigma^2I)\)</span>，根据高斯分布函数的定义：
+<span class="math display">\[
+f(x|\mu,\sigma^2)=\frac{1}{\sqrt{2Π\sigma^2}}exp(-\frac{(x-\mu)^2}{2\sigma^2})
+\]</span> 所以<span class="math inline">\(p_1(x|x_1)=\mathcal{N}(x_1,\sigma^2I)=f(x-x_1)\)</span>，把它理解为是一个关于<span class="math inline">\(x-x_1\)</span>的函数<span class="math inline">\(f\)</span>(与高斯分布函数f不一样)</p>
+<p>故<span class="math inline">\(p_1(x)=\int p_1(x|x_1)q(x_1)dx_1=\int
+f(x-x_1)q(x_1)dx_1≈q(x)\)</span>，即<span class="math inline">\((f*q)(x)\)</span>卷积</p>
+</blockquote>
+<h3 id="构造向量场u_tx">构造向量场u_t(x)</h3>
+<p>给定<span class="math inline">\(u_t(x|x_1)\)</span>能产生条件概率路径<span class="math inline">\(p_t(x|x_1)\)</span>，则它们满足连续性方程： <span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}p_t(x|x_1)+div(p_t(x|x_1)u_t(x|x_1))=0\\
+其中，x=(x^1,...,x^d)，
+发散算子div=\sum_{i=1}^d\frac{\partial}{\partial x^i}
+\end{aligned}
+\]</span> 对于真实分布<span class="math inline">\(q(x_1)\)</span>，可进行边缘化得到<span class="math inline">\(p_t(x)\)</span>，要得到<span class="math inline">\(u_t(x)\)</span>的形式，从连续性方程入手：</p>
+<blockquote>
+<p><span class="math inline">\(p_t(x)\)</span>与<span class="math inline">\(u_t(x)\)</span>需要满足连续性： 目标 <span class="math display">\[
+\frac{d}{dt}p_t(x)+div(p_t(x)u_t(x))=0
+\]</span> 证明，对<span class="math inline">\(p_t(x)=\int
+p_t(x|x_1)q(x_1)dx_1\)</span>，两边对t求导，再代入连续性方程，交换积分(对x_1)和求导(对x)，独立的不影响，得：
+<span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}p_t(x)&amp;=\int (\frac{d}{dt}p_t(x|x_1))q(x_1)dx_1=-\int
+div(p_t(x|x_1)u_t(x|x_1))q(x_1)dx_1\\
+&amp;=-div(\int p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1)
+\end{aligned}
+\]</span> 此时，要得到目标，故对<span class="math inline">\(\int
+p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1\)</span>乘一个<span class="math inline">\(p_t(x)\)</span>,除一个<span class="math inline">\(p_t(x)\)</span>，即<span class="math inline">\(\frac{p_t(x)\int
+p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1}{p_t(x)}\)</span>，对比<span class="math inline">\(p_t(x)u_t(x)\)</span>，可以得到: <span class="math display">\[
+u_t(x)=\frac{\int p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1}{p_t(x)}
+\]</span></p>
+</blockquote>
+<h2 id="条件流匹配cfm">条件流匹配CFM</h2>
+<p><code>先前存在问题</code>：由于前面构造的<span class="math inline">\(p_t(x)\)</span>和<span class="math inline">\(u_t(x)\)</span>是积分形式，不容易进行计算，从而导致原目标<span class="math inline">\(\mathcal{L}_{FM}(\theta)=E_{t,p_t(x)}||v_t(x)-u_t(x)||^2\)</span>不好计算。</p>
+<p><code>解决方法</code>：更简单的目标，且能产生与原目标相同的最优结果。</p>
+<p>假定<span class="math inline">\(p_t(x|x_1)\)</span>已知，那么就可以从中采样，并计算<span class="math inline">\(u_t(x|x_1)\)</span>，从而避免去计算积分。 <span class="math display">\[
+\mathcal{L}_{CFM}(\theta)=E_{t,q(x_1),p_t(x|x_1)}||v_t(x)-u_t(x|x_1)||^2
+\]</span> 其中，<span class="math inline">\(t\sim
+\mathcal{U}[0,1],x_1\sim q(x_1),x\sim p_t(x|x_1)\)</span>，<span class="math inline">\(q\)</span>是目标真实分布。</p>
+<ul>
+<li><strong>如何保证与原目标相同的最优结果？</strong></li>
+</ul>
+<p>神经网络<span class="math inline">\(v_t\)</span>的参数<span class="math inline">\(\theta\)</span>，是梯度值计算，需<strong>保证梯度值一样</strong>。
+证明如下：</p>
+<blockquote>
+<p>证明：<span class="math inline">\(\nabla_\theta
+\mathcal{L}_{CFM}(\theta)=\nabla_\theta
+\mathcal{L}_{FM}(\theta)\)</span></p>
+<p>假设：</p>
+<ul>
+<li>为保证积分的存在性，需允许交换积分次序；</li>
+<li><span class="math inline">\(q(x)\)</span>和<span class="math inline">\(p_t(x|x_1)\)</span>在<span class="math inline">\(x
+\rightarrow ∞\)</span>时趋于0；</li>
+<li><span class="math inline">\(u_t,v_t,\nabla_\theta
+v_t\)</span>有界。</li>
+</ul>
+<p>对于两个目标， <span class="math display">\[
+\begin{aligned}
+\mathcal{L}_{FM}(\theta)&amp;=E_{t,p_t(x)}||v_t(x)-u_t(x)||^2\\
+\mathcal{L}_{CFM}(\theta)&amp;=E_{t,q(x_1),p_t(x|x_1)}||v_t(x)-u_t(x|x_1)||^2
+\end{aligned}
+\]</span>
+外面都是算期望，先不管，取出里面的二范数并做展开，中间项是内积<span class="math inline">\(a·b=a_1b_1+...+a_nb_n\)</span>： <span class="math display">\[
+\begin{aligned}
+||v_t(x)-u_t(x)||^2&amp;=||v_t(x)||^2-2\langle
+v_t(x),u_t(x)\rangle+||u_t(x)||^2 \\
+||v_t(x)-u_t(x|x_1)||^2&amp;=||v_t(x)||^2-2\langle
+v_t(x),u_t(x|x_1)\rangle+||u_t(x|x_1)||^2 \\
+\end{aligned}
+\]</span> 由于只考虑神经网络<span class="math inline">\(v_t(x)\)</span>的<span class="math inline">\(\theta\)</span>，故可把最后一项<span class="math inline">\(u_t(x)\)</span>划掉。</p>
+<p><strong>若能保证两项的结果是一样的，那么就说明等价了。</strong></p>
+<p>先考虑，<span class="math inline">\(E_{t,p_t(x)}||v_t(x)||^2\)</span>与<span class="math inline">\(E_{t,q(x_1),p_t(x|x_1)}||v_t(x)||^2\)</span>的等价性，展开为积分，然后利用<span class="math inline">\(p_t(x)\)</span>被推出来的边缘化公式： <span class="math display">\[
+\begin{aligned}
+E_{t,p_t(x)}||v_t(x)||^2&amp;=\int ||v_t(x)||^2p_t(x)dx=\iint
+||v_t(x)||^2p_t(x|x_1)q(x_1)dx_1dx\\
+&amp;=E_{t,q(x_1),p_t(x|x_1)}||v_t(x)||^2
+\end{aligned}
+\]</span> 再考虑，<span class="math inline">\(E_{t,p_t(x)}||\langle
+v_t(x),u_t(x)\rangle||^2\)</span>与<span class="math inline">\(E_{t,q(x_1),p_t(x|x_1)}||\langle
+v_t(x),u_t(x|x_1)\rangle||^2\)</span>的等价性，展开为积分，代入<span class="math inline">\(u_t(x)\)</span>的形式，然后可以约掉(因为内积具有线性性质，<span class="math inline">\(\langle ka,b \rangle=k\langle
+a,b\rangle\)</span>)，然后<code>交换积分和内积的顺序</code>(先内积再积分，可提x1)：
+<span class="math display">\[
+\begin{aligned}
+E_{t,p_t(x)}||\langle v_t(x),u_t(x)\rangle||^2&amp;=\int \langle
+v_t(x),\frac{\int p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1}{p_t(x)} \rangle
+p_t(x)dx\\
+&amp;=\int \langle v_t(x),\int p_t(x|x_1)u_t(x|x_1)q(x_1)dx_1 \rangle dx
+\\
+&amp;=\iint \langle v_t(x),u_t(x|x_1) \rangle p_t(x|x_1)q(x_1)dx_1dx \\
+&amp;=E_{t,q(x_1),p_t(x|x_1)}||\langle v_t(x),u_t(x|x_1)\rangle||^2
+\end{aligned}
+\]</span></p>
+</blockquote>
+<h3 id="条件概率路径与条件向量场">条件概率路径与条件向量场</h3>
+<p>为了让条件更加简化，<code>假定条件概率路径是高斯建模</code>: <span class="math display">\[
+p_t(x|x_1)=\mathcal{N}(x|\mu_t(x_1),\sigma_t(x_1)^2I)
+\]</span> 其中，<span class="math inline">\(\mu:[0,1]×R^d \rightarrow
+R^d\)</span>，<span class="math inline">\(\sigma:[0,1]×R^d \rightarrow
+R_{&gt;0}\)</span>(大于0就行，因为是一个标量乘单位阵)，<span class="math inline">\(x_1\)</span>是样本数据</p>
+<p>设定</p>
+<ul>
+<li>t=0，<span class="math inline">\(\mu_0(x_1)=0,\sigma_0(x_1)=1\)</span>;
+标准高斯分布</li>
+<li>t=1，<span class="math inline">\(\mu_1(x_1)=x_1,\sigma_1(x_1)=\sigma_{min}\)</span>，
+以<span class="math inline">\(x_1\)</span>为中心的高斯分布</li>
+</ul>
+<p><code>为什么是高斯</code></p>
+<p><u>大部分向量场会产生额外计算</u>(?)，而高斯的话<strong>能产生符合条件且最简单的向量场</strong>。</p>
+<p>（概率路径 -&gt; 流(轨迹)）进行参数化，仿射变换： <span class="math display">\[
+\phi_t(x)=\sigma_t(x_1)x+\mu_t(x_1)
+\]</span> 其中，<span class="math inline">\(x\)</span>是从标准高斯分布采样得来。</p>
+<p>概率路径的迭代方式：</p>
+<p>根据<span class="math inline">\(p_t=[\phi_t]_*p_0\)</span>，故假定已知<span class="math inline">\(p_0(x|x_1)\)</span>，那么就能知道<span class="math inline">\(p_t(x|x_1)\)</span>，且有(<span class="math inline">\(p(x)\)</span>是标准高斯)： <span class="math display">\[
+p_t(x|x_1)=[\phi_t]_*p(x)
+\]</span> <code>条件流与条件场</code></p>
+<p>原先的流与场：<span class="math inline">\(\frac{d}{dt}\phi_t(x)=v_t(\phi_t(x))\)</span></p>
+<p>条件流与场：<span class="math inline">\(\frac{d}{dt}\phi_t(x)=u_t(\phi_t(x)|x_1)\)</span></p>
+<p>代入<strong>CFM目标函数</strong>：<span class="math inline">\(\mathcal{L}_{CFM}(\theta)=E_{t,q(x_1),p_t(x|x_1)}||v_t(x)-u_t(x|x_1)||^2\)</span>，得到：
+<span class="math display">\[
+\mathcal{L}_{CFM}(\theta)=E_{t,q(x_1),p(x_0)}||v_t(\phi_t(x_0))-\frac{d}{dt}\phi_t(x_0)||^2
+\]</span> <code>条件概率路径-&gt;条件场</code></p>
+<p>假定<span class="math inline">\(p_t(x|x_1)\)</span>已知是一个高斯概率路径<span class="math inline">\(p_t(x|x_1)=\mathcal{N}(x|\mu_t(x_1),\sigma_t(x_1)^2I)\)</span>，根据<span class="math inline">\(\phi_t\)</span>的仿射变换<span class="math inline">\(\phi_t(x)=\sigma_t(x_1)x+\mu_t(x_1)\)</span>，以及条件流与场的关系，于是就能给出定义<span class="math inline">\(\phi_t\)</span>的向量场： <span class="math display">\[
+u_t(x|x_1)=\frac{\sigma&#39;_t(x_1)}{\sigma_t(x_1)}(x-\mu_t(x_1))+\mu_t&#39;(x_1)
+\]</span> 结果，<span class="math inline">\(\mu_t(x|x_1)\)</span>能产生高斯路径<span class="math inline">\(p_t(x|x_1)\)</span>,从而知道<span class="math inline">\(u_t\)</span>的形式。</p>
+<blockquote>
+<p>证明：(利用了流与向量场的关系进行变量替换，然后利用条件概率路径对应的<span class="math inline">\(\phi\)</span>进行代入高斯假定)</p>
+<p>令<span class="math inline">\(w_t(x)=u_t(x|x_1)\)</span>，则<span class="math inline">\(\frac{d}{dt}\phi_t(x)=u_t(\phi_t(x)|x_1)\)</span>等价于<span class="math inline">\(\frac{d}{dt}\phi_t(x)=w_t(\phi_t(x))\)</span>.</p>
+<p>通用变量替换：令<span class="math inline">\(y=\phi(x),则x=\phi^{-1}(y)\)</span>，于是有<span class="math inline">\(w_t(y)=\phi_t&#39;(\phi^{-1}(y))\)</span></p>
+<p>代入特定高斯假定：</p>
+<ul>
+<li>根据<span class="math inline">\(\phi_t(x)=\sigma_t(x_1)x+\mu_t(x_1)\)</span>，得<span class="math inline">\(\phi^{-1}(y)=\frac{y-\mu_t(x_1)}{\sigma_t(x_1)}\)</span></li>
+<li>根据<span class="math inline">\(\phi_t(x)=\sigma_t(x_1)x+\mu_t(x_1)\)</span>，两边对t求导，得<span class="math inline">\(\phi_t(x)&#39;=\sigma_t&#39;(x_1)x+\mu_t&#39;(x_1)\)</span></li>
+</ul>
+<p>代入<span class="math inline">\(w_t(y)=\phi_t&#39;(\phi^{-1}(y))\)</span>，得：
+<span class="math display">\[
+\begin{aligned}
+w_t(y)&amp;=\phi_t&#39;(\frac{y-\mu_t(x_1)}{\sigma_t(x_1)})=\sigma_t&#39;(x_1)\frac{y-\mu_t(x_1)}{\sigma_t(x_1)}+\mu_t&#39;(x_1)\\
+u_t(x|x_1)&amp;=\frac{\sigma&#39;_t(x_1)}{\sigma_t(x_1)}(x-\mu_t(x_1))+\mu_t&#39;(x_1)\\
+\end{aligned}
+\]</span></p>
+</blockquote>
+<h2 id="高斯条件概率路径的特例">高斯条件概率路径的特例</h2>
+<p>验证条件概率路径推出的条件向量场能成立，以下给出两个特例：(但以下只讲扩散模型相关的特例)<code>扩散模型相关的条件VFs</code>和<code>最优传输</code></p>
+<p><code>扩散模型相关的条件VFs</code></p>
+<blockquote>
+<p>前置知识:</p>
+<p>扩散模型的两个类型: Variance Exploding(VE)和Variance
+Preserving(VP)</p>
+<blockquote>
+<p>VE和VP是来自Score-based那篇文章(通过SDE的基于分数的生成建模)</p>
+<p>要注意本文和那篇文章的符号不一样。</p>
+</blockquote>
+<p><code>VE: 方差爆炸(SMLD)</code></p>
+<p>朗之万动力学，有点类似梯度下降+随机项</p>
+<p>一般的扩散模型流程：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20250101163826215.png" alt="扩散流程">
+<figcaption aria-hidden="true">扩散流程</figcaption>
+</figure>
+<p>(1)单步加噪：<span class="math inline">\(P(x_i|x_{i-1})=\mathcal{N}(x_{i-1},(a_i^2-a_{i-1}^2)I)\)</span>，其中，方差<span class="math inline">\(a_i^2-a_{i-1}^2\)</span>是提前设定的。</p>
+<p>VE中要求是递增的: <span class="math inline">\(0&lt;a_1&lt;a_2&lt;...&lt;a_T\)</span>，一般是一个等比数列</p>
+<p>(2)离散马尔科夫：</p>
+<p>当前状态依赖上一步状态，<span class="math inline">\(x_i=x_{i-1}+\sqrt{a_i^2-a_{i-1}^2}\epsilon_{i-1}\)</span>
+（直接加噪声项）</p>
+<p>(3)方差爆炸性：</p>
+<p><strong>随着时间增加，方差增大</strong></p>
+<p>由来：单步加噪分布(<span class="math inline">\(P(x_i|x_{i-1})\)</span>) -&gt; 离散马尔可夫 -&gt;
+连续化，SDE形式，求解<span class="math inline">\(x_t\)</span> -&gt;
+求解方法，求期望和方差<span class="math inline">\(E(x_t),D(x_t)\)</span>。</p>
+<p>主要针对方差<span class="math inline">\(D(x_t)\)</span>，即<span class="math inline">\((a_t^2-a_{0}^2)I\)</span>，在VE中，<span class="math inline">\(a\)</span>是递增的，所以方差也会一直递增。</p>
+<p><code>VP: 方差保持(DDPM)</code></p>
+<p>(1)单步加噪：<span class="math inline">\(P(x_i|x_{i-1})=\mathcal{N}(\sqrt{1-\beta_i}x_{i-1},\beta_iI)\)</span>，其中，<span class="math inline">\(\beta_i\)</span>是事先设定的。</p>
+<p>VP中要求，0~1之间即可，不用递增，<span class="math inline">\(0&lt;\beta_1,...,\beta_n&lt;1\)</span></p>
+<p>一般是线性插值，给定<span class="math inline">\(\beta_{min}\)</span>和<span class="math inline">\(\beta_{max}\)</span>就行，<span class="math inline">\(\beta(t)=\overline \beta_{min}+t(\overline
+\beta_{max}-\overline \beta_{min})\)</span></p>
+<p>(2)离散马尔可夫：<span class="math inline">\(x=\mu+\sqrt{\sigma}\epsilon\)</span></p>
+<p><span class="math inline">\(x_i=\sqrt{1-\beta_i}x_{i-1}+\sqrt{\beta_i}\epsilon_{i-1}\)</span>
+（原图处理，再加噪声）</p>
+<p>这么设置的原因：希望最终噪声图是<span class="math inline">\(\mathcal{N}(0,I)\)</span>,那么令<span class="math inline">\(\alpha_i=1-\beta_i,\overline
+\alpha_t=\prod_{i=0}^t\alpha_i\)</span>，</p>
+<p>由<strong>DDPM的一步加噪</strong>，可得最终噪声图<span class="math inline">\(x_T \sim \mathcal{N}(\sqrt{\overline
+\alpha_T}x_0,(1-\overline \alpha_T)I)\)</span>，且随着<span class="math inline">\(t\)</span>增加，<span class="math inline">\(\overline \alpha_T \rightarrow 0\)</span></p>
+<p>于是最终结果就会趋近<span class="math inline">\(\mathcal{N}(0,I)\)</span>。</p>
+<p>(3)方差不变性</p>
+<p>随着时间增加，<strong>方差有上界</strong>。</p>
+<p><span class="math inline">\(D(x_t)\)</span>的处理，是<span class="math inline">\((1-\alpha_{1-t}^2)I\)</span>，其中<span class="math inline">\(\alpha_t=e^{-\frac{1}{2}T(t)}\)</span>，<span class="math inline">\(T(t)=\int_0^t \beta(s)ds\)</span>，<span class="math inline">\(t∈[0,1]\)</span></p>
+</blockquote>
+<p>高斯条件概率路径 <span class="math inline">\(P_t(x|x_0)\)</span>，可通过SDE形式推导：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20250101172731949.png" alt="SDE形式P_t">
+<figcaption aria-hidden="true">SDE形式P_t</figcaption>
+</figure>
+<p>由条件概率路径(Score-based) -&gt; 条件向量场：</p>
+<p>已知,(此处符号不太一样，原图样本[t=1]是<span class="math inline">\(x_1\)</span>,噪声图[t=0]是<span class="math inline">\(x_0\)</span>，于是令t=1-t，之前符号的<span class="math inline">\(x_0\)</span>视作<span class="math inline">\(x_1\)</span>）</p>
+<h3 id="推导思路一cfm指导">推导思路一：CFM指导</h3>
+<p><code>VE的向量场推导</code></p>
+<p>此处<span class="math inline">\(\sigma(0)=0\)</span>，因为原样本已给出，不存在方差一说，故是0。</p>
+<p>勘误：不是去噪，都是加噪的(data-&gt;noise)</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20250101173242487.png" alt="VE的P_t">
+<figcaption aria-hidden="true">VE的P_t</figcaption>
+</figure>
+<p>由<span class="math inline">\(u_t(x|x_1)=\frac{\sigma&#39;_t(x_1)}{\sigma_t(x_1)}(x-\mu_t(x_1))+\mu_t&#39;(x_1)\)</span>,其中‘是关于t求导。</p>
+<p>所以得到： <span class="math display">\[
+u_t(x|x_1)=-\frac{\sigma_{1-t}&#39;}{\sigma_{1-t}}(x-x_1)
+\]</span></p>
+<p><code>VP的向量场推导</code></p>
+<p>勘误：不是去噪，都是加噪的(data-&gt;noise)</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20250101173147161.png" alt="VP_Pt">
+<figcaption aria-hidden="true">VP_Pt</figcaption>
+</figure>
+<p>同理得到： <span class="math display">\[
+u_t(x|x_1)=\frac{\alpha_{1-t}&#39;}{1-\alpha_{1-t}^2}(\alpha_{1-t}x-x_1)=-\frac{T&#39;(1-t)}{2}[\frac{e^{-T(1-t)}x-e^{
+-\frac{1}{2}T(1-t)}x_1}{1-e^{-T(1-t)}}]
+\]</span></p>
+<ul>
+<li><strong>为什么选择流匹配(计算这个场)，分数模型不行吗？</strong></li>
+</ul>
+<p>(1)实验证明，结果更稳定，鲁棒</p>
+<p>(2)之前SDE求解得到的理论解，不一定能在有限时间内得到这种噪声分布，是一种理想解；</p>
+<p>但是在流匹配中，只需要设置<span class="math inline">\(\mu_t\)</span>和<span class="math inline">\(\sigma_t\)</span>，那么就可以控制概率路径。</p>
+<h3 id="推导思路二sde与fpk">推导思路二：SDE与FPK</h3>
+<p>之前讲的那种，是通过<span class="math inline">\(u_t(x|x_1)=\frac{\sigma&#39;_t(x_1)}{\sigma_t(x_1)}(x-\mu_t(x_1))+\mu_t&#39;(x_1)\)</span>，然后给定<span class="math inline">\(\mu_t\)</span>和<span class="math inline">\(\sigma_t\)</span>来代入公式，求得向量场<span class="math inline">\(u_t(x|x_1)\)</span>。</p>
+<p>另一种思路，通过SDE的形式，经过FPK公式，得到概率路径<span class="math inline">\(P_t\)</span>，再得到向量场<span class="math inline">\(u_t\)</span>。</p>
+<p><code>符号定义</code></p>
+<p>扩散模型中是数据(t=0) -&gt; 噪声(t=1)，而在流匹配中是数据(t=1) -&gt;
+噪声(t=0)</p>
+<p>于是得到的定义是：<span class="math inline">\(\hat
+P_t(x)=P_{1-t}(x)\)</span>，<span class="math inline">\(\hat
+u_t(x)=-u_{1-t}(x)\)</span></p>
+<blockquote>
+<p><span class="math inline">\(\hat
+u_t(x)=-u_{1-t}(x)\)</span>为什么加了负号？</p>
+<p>由连续性方程：<span class="math inline">\(\frac{d}{dt}p_t(x)+div(p_t(x)v_t(x))=0\)</span>，而此时：
+<span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}\hat p_t(x)=\frac{d}{dt}p_{1-t}(x)&amp;=-p&#39;_{1-t}(x)\\
+&amp;=div(p_{1-t}(x)u_{1-t}(x))\\
+&amp;=-div(p_{1-t}(x)(-u_{1-t}(x)))\\
+&amp;=-div(\hat p_t(x)\hat u_t(x))\\
+\end{aligned}
+\]</span></p>
+</blockquote>
+<p>SDE得到向量场(前面推导的)：</p>
+<blockquote>
+<blockquote>
+<p>推导连续性方程：<strong>SDE与FPK公式</strong></p>
+<p>SDE(随机微分方程)标准形式：<span class="math inline">\(dy=f_tdt+g_tdw\)</span>，<span class="math inline">\(t\)</span>是时间，<span class="math inline">\(f_t\)</span>是漂移系数，<span class="math inline">\(g_t\)</span>是扩散系数，<span class="math inline">\(dw\)</span>是维纳过程，解是<span class="math inline">\(y_t\)</span>描述的是一个随机过程。</p>
+<ul>
+<li>维纳过程：正态，独立增量 <span class="math inline">\(dw=w(t+\Delta
+t)-w(t)\sim\mathcal{N}(0,\Delta tI)\)</span>,</li>
+</ul>
+<p>​ 重参数化，<span class="math inline">\(dw=0+\sqrt{\Delta
+t}\epsilon\)</span>，<span class="math inline">\(\epsilon\sim
+\mathcal{N}(0,1)\)</span>，相当于是一个<u>高斯噪声项</u></p>
+<p>既然<span class="math inline">\(y_t\)</span>是随机过程，就有其对应的概率密度<span class="math inline">\(p_t\)</span>，而Fokker-Planck(FPK)就是用于得到<span class="math inline">\(p_t\)</span>（去掉噪声项）： <span class="math display">\[
+\begin{aligned}
+FPK:\frac{dp_t}{dt}=-div(f_tp_t)+\frac{g_t^2}{2}\Delta p_t\\
+\Delta是拉普拉斯算子(对y)，等价于div\nabla,\nabla是求梯度的(对y)\\
+\end{aligned}
+\]</span> 根据已知的FPK公式，推导连续性方程(div搞一起，提取<span class="math inline">\(p_t\)</span>)：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241229162221606.png" alt="连续性方程推导">
+<figcaption aria-hidden="true">连续性方程推导</figcaption>
+</figure>
+<p>对比一下就知道，向量场<span class="math inline">\(v_t\)</span>其实就是<span class="math inline">\(w_t=f_t-\frac{g_t^2}{2}\nabla log p_t\)</span></p>
+</blockquote>
+</blockquote>
+<p>如果要求这个向量场，只要把<span class="math inline">\(\nabla log\
+p_t\)</span>得到(对y求导)。</p>
+<p><code>VE向量场推导</code></p>
+<p>SDE标准形式是<span class="math inline">\(dy=f_tdt+g_tdw\)</span>，</p>
+<p>VE的SDE形式(score-based推导的)，<span class="math inline">\(f_t=0,g_t^2=\frac{d}{dt}\sigma_t^2=2\sigma_t\sigma&#39;_t\)</span>：
+<span class="math display">\[
+dy=\sqrt{\frac{d}{dt}\sigma_t^2}dw
+\]</span> 对于<span class="math inline">\(\nabla log\ p_t\)</span>：</p>
+<p>首先，概率路径<span class="math inline">\(p_t\)</span>就是：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20250101172731949.png" alt="SDE形式P_t">
+<figcaption aria-hidden="true">SDE形式P_t</figcaption>
+</figure>
+<p><span class="math inline">\(p_t(y|y_0)=\mathcal{N}(y|y_0,\sigma_t^2I)\)</span>，把它写成高斯函数的形式：</p>
+<figure>
+<img src="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/image-20241230153527820.png" alt="高斯函数">
+<figcaption aria-hidden="true">高斯函数</figcaption>
+</figure>
+<p>即 <span class="math display">\[
+\begin{aligned}
+log\
+p_t&amp;=ln(\frac{1}{\sqrt{2Π\sigma_t^2}})-\frac{(y-y_0)^2}{2\sigma_t^2}\\
+\nabla log\ p_t
+&amp;=-\frac{1}{2\sigma_t^2}2(y-y_0)=-\frac{y-y_0}{\sigma_t^2}
+\end{aligned}
+\]</span> 代入<span class="math inline">\(w_t=f_t-\frac{g_t^2}{2}\nabla
+log\ p_t\)</span>，得： <span class="math display">\[
+w_t=0-\frac{2\sigma_t\sigma&#39;_t}{2}(-\frac{y-y_0}{\sigma_t^2})=\frac{\sigma_t&#39;}{\sigma_t}(y-y_0)
+\]</span> 然后再把下标变一下(之前都是t=0-&gt;1)，现在是1-&gt;0： <span class="math display">\[
+\begin{aligned}
+\hat p_t(y|y_0)&amp;=\mathcal{N}(y|y_0,\sigma_{1-t}^2I)\\
+\hat w_t&amp;=-\frac{\sigma_{1-t}&#39;}{\sigma_{1-t}}(y-y_0)\\
+\end{aligned}
+\]</span> <code>VP向量场推导</code></p>
+<p>SDE标准形式是<span class="math inline">\(dy=f_tdt+g_tdw\)</span>，</p>
+<p>VP的SDE形式(score-based推导的)，<span class="math inline">\(f_t=-\frac{T&#39;(t)}{2}y,g_t^2=\sqrt{T&#39;(t)}\)</span>，<span class="math inline">\(T(t)=\int_0^t \beta(s)ds\)</span>，<span class="math inline">\(t∈[0,1]\)</span>： <span class="math display">\[
+dy=-\frac{T&#39;(t)}{2}ydt+\sqrt{T&#39;(t)}dw
+\]</span> 概率路径<span class="math inline">\(p_t=\mathcal{N}(y|e^{-\frac{1}{2}T(t)}y_0,(1-e^{-T(t)})I)\)</span></p>
+<p>同理求<span class="math inline">\(\nabla log\ p_t\)</span></p>
+<p>结果得到： <span class="math display">\[
+\begin{aligned}
+w_t(y|y_0)&amp;=\frac{T&#39;(t)}{2}(\frac{y-e^{-\frac{1}{2}T(t)}y_0}{1-e^{-T(t)}}-y)\\
+\hat
+w_t(y|y_0)&amp;=-\frac{T&#39;(1-t)}{2}[\frac{e^{-T(1-t)}y-e^{-\frac{1}{2}T(1-t)}y_0}{1-e^{-T(1-t)}}]
+\end{aligned}
+\]</span> 求出来的w和前面的u是一样的。</p>
+<h2 id="flow-matching总结">Flow Matching总结</h2>
+<p>注意点，本篇文章中，<span class="math inline">\(x_1\)</span>是样本，<span class="math inline">\(x_0\)</span>是噪声。</p>
+<ol type="1">
+<li><p><strong>流<span class="math inline">\(\phi_t\)</span>，场<span class="math inline">\(v_t\)</span>，概率密度<span class="math inline">\(P_t\)</span>，彼此关系</strong></p>
+<p>流与场 原文公式(1)(2) <span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}\phi_t(x)&amp;=v_t(\phi_t(x))\\
+\phi_0(x)&amp;=x\\
+\end{aligned}
+\]</span> 概率密度与场 原文公式(26) <span class="math display">\[
+\begin{aligned}
+\frac{d}{dt}p_t(x|x_1)+div(p_t(x|x_1)u_t(x|x_1))=0\\
+其中，x=(x^1,...,x^d)，
+发散算子div=\sum_{i=1}^d\frac{\partial}{\partial x^i}
+\end{aligned}
+\]</span> 简单分布<span class="math inline">\(P_0\)</span>推<span class="math inline">\(P_t\)</span>， 原文公式(3)(4) <span class="math display">\[
+p_t(x)=[\phi_t]_*p_0=p_0(\phi^{-1}(x))·|det(\frac{\partial
+\phi^{-1}(x)}{\partial x_1})|
+\]</span></p></li>
+<li><p>流匹配目标</p></li>
+</ol>
+<p>找到一条概率路径，能从<span class="math inline">\(P_0\)</span>得到<span class="math inline">\(P_1\)</span></p>
+<p>研究对象是场，知道了场同样就知道概率路径。</p>
+<p>实现：神经网络<span class="math inline">\(v_t(\theta)\)</span>拟合向量场<span class="math inline">\(u_t\)</span>，那么就需要知道这个场<span class="math inline">\(u_t\)</span>的表示形式。</p>
+<ol start="3" type="1">
+<li><strong>如何表示<span class="math inline">\(u_t\)</span>（3个定理)</strong></li>
+</ol>
+<p>定理1： 证明/给出<span class="math inline">\(u_t(x)\)</span>的形式
+(如果知道了也不用拟合了，显然难以计算得知)</p>
+<p>定理2： 由于前面给出的形式有积分不容易计算，故替换为加了条件的<span class="math inline">\(u_t(x|x_1)\)</span>形式</p>
+<p>​ 能否替换？ 需证明原目标损失的梯度和现目标损失的梯度一致</p>
+<p>定理3： 把条件更简化，高斯条件下的向量场<span class="math inline">\(u_t(x|x_1)\)</span></p>
+<p>​ 验证：(1)用扩散过程的VE和VP (2)最优传输(此处没讲)</p>
+<p>​ 其中VE和VP的验证分为两个思路：(1)直接用定理3推VE和VP的条件向量场；
+(2)SDE+FPK公式推导条件向量场</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heishuini.github.io">heishuini</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heishuini.github.io/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/">https://heishuini.github.io/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heishuini.github.io" target="_blank">Heishuini's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/diffusion-model/">diffusion model</a></div><div class="post-share"><div class="social-share" data-image="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.4/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2024/12/28/%E5%89%8D%E6%B2%BF%E7%A0%94%E7%A9%B6-FLUX/" title="前沿研究|FLUX"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">前沿研究|FLUX</div></div><div class="info-2"><div class="info-item-1">FLUX.1  官方简介：Announcing Black Forest Labs - Black Forest Labs 官方代码：https://github.com/black-forest-labs/flux Diffusers运行FLUX.1：https://huggingface.co/docs/diffusers/main/en/api/pipelines/flux 权重：black-forest-labs (Black Forest Labs) 技术报告：未上线  作者背景 Black Forest Labs开发，成员基本是 Stable Diffusion 3的作者。 代表作：  VQGAN: [2012.09841] Taming Transformers for High-Resolution Image Synthesis Latent Diffusion： [2112.10752] High-Resolution Image Synthesis with Latent Diffusion...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/" title="(一)扩散模型学习——DDPM"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2024-12-19</div><div class="info-item-2">(一)扩散模型学习——DDPM</div></div><div class="info-2"><div class="info-item-1"> DDPM 《Denoising Diffusion Probabilistic Models》 代码：https://github.com/hojonathanho/diffusion 地址：http://arxiv.org/abs/2006.11239  开篇之作：第一次使用diffusion models去做无条件图像生成任务。 扩散模型的核心便是，从一个复杂的数据分布，不断变换至简单易分析的数据分布，如高斯分布。   DDPM总体流程  在以上图中，首先是前向过程，对图像加噪得到一系列,,...,,最后接近高斯噪声；然后是逆向过程，从到的去噪过程，也称为图像生成过程。 结论 先说结论。  前向加噪    反向去噪   ==注意区分和== 计算时的由UNet预测得到，就是个常数。 重参数化技巧: 从采样可以实现为从采样，然后再算。此时的结果便是要求的 总体流程 前向过程 对图像加噪的方式，DDPM采用的是对图像和噪声，进行以下公式的加权求和， ...</div></div></div></a><a class="pagination-related" href="/2024/12/28/%E5%89%8D%E6%B2%BF%E7%A0%94%E7%A9%B6-FLUX/" title="前沿研究|FLUX"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2024-12-28</div><div class="info-item-2">前沿研究|FLUX</div></div><div class="info-2"><div class="info-item-1">FLUX.1  官方简介：Announcing Black Forest Labs - Black Forest Labs 官方代码：https://github.com/black-forest-labs/flux Diffusers运行FLUX.1：https://huggingface.co/docs/diffusers/main/en/api/pipelines/flux 权重：black-forest-labs (Black Forest Labs) 技术报告：未上线  作者背景 Black Forest Labs开发，成员基本是 Stable Diffusion 3的作者。 代表作：  VQGAN: [2012.09841] Taming Transformers for High-Resolution Image Synthesis Latent Diffusion： [2112.10752] High-Resolution Image Synthesis with Latent Diffusion...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">heishuini</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">5</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>关注我</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">这是我的博客</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="toc-number">1.</span> <span class="toc-text">基础概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9E%E7%BB%AD%E5%BD%92%E4%B8%80%E5%8C%96%E6%B5%81cnf"><span class="toc-number">2.</span> <span class="toc-text">连续归一化流CNF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%81%E5%8C%B9%E9%85%8Dfm%E7%9A%84%E7%9B%AE%E6%A0%87"><span class="toc-number">3.</span> <span class="toc-text">流匹配FM的目标</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%9F%E5%A7%8B%E7%9B%AE%E6%A0%87"><span class="toc-number">3.1.</span> <span class="toc-text">原始目标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E7%9B%AE%E6%A0%87%E8%B7%AF%E5%BE%84p_tx"><span class="toc-number">3.2.</span> <span class="toc-text">构造目标路径p_t(x)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E5%90%91%E9%87%8F%E5%9C%BAu_tx"><span class="toc-number">3.3.</span> <span class="toc-text">构造向量场u_t(x)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E6%B5%81%E5%8C%B9%E9%85%8Dcfm"><span class="toc-number">4.</span> <span class="toc-text">条件流匹配CFM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87%E8%B7%AF%E5%BE%84%E4%B8%8E%E6%9D%A1%E4%BB%B6%E5%90%91%E9%87%8F%E5%9C%BA"><span class="toc-number">4.1.</span> <span class="toc-text">条件概率路径与条件向量场</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%AB%98%E6%96%AF%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87%E8%B7%AF%E5%BE%84%E7%9A%84%E7%89%B9%E4%BE%8B"><span class="toc-number">5.</span> <span class="toc-text">高斯条件概率路径的特例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A8%E5%AF%BC%E6%80%9D%E8%B7%AF%E4%B8%80cfm%E6%8C%87%E5%AF%BC"><span class="toc-number">5.1.</span> <span class="toc-text">推导思路一：CFM指导</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A8%E5%AF%BC%E6%80%9D%E8%B7%AF%E4%BA%8Csde%E4%B8%8Efpk"><span class="toc-number">5.2.</span> <span class="toc-text">推导思路二：SDE与FPK</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#flow-matching%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">Flow Matching总结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/01/02/%E7%90%86%E8%AE%BA%E5%AD%A6%E4%B9%A0-Flow-matching/" title="理论学习|Flow matching">理论学习|Flow matching</a><time datetime="2025-01-02T05:19:55.000Z" title="发表于 2025-01-02 13:19:55">2025-01-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/28/%E5%89%8D%E6%B2%BF%E7%A0%94%E7%A9%B6-FLUX/" title="前沿研究|FLUX">前沿研究|FLUX</a><time datetime="2024-12-28T04:43:44.000Z" title="发表于 2024-12-28 12:43:44">2024-12-28</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/27/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB-NAFNet/" title="论文阅读|NAFNet">论文阅读|NAFNet</a><time datetime="2024-12-27T10:11:22.000Z" title="发表于 2024-12-27 18:11:22">2024-12-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/(%E4%B8%80)%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AD%A6%E4%B9%A0%E2%80%94%E2%80%94DDPM/" title="(一)扩散模型学习——DDPM">(一)扩散模型学习——DDPM</a><time datetime="2024-12-19T08:02:42.000Z" title="发表于 2024-12-19 16:02:42">2024-12-19</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2024/12/19/environment-build/" title="environment build">environment build</a><time datetime="2024-12-19T07:18:42.000Z" title="发表于 2024-12-19 15:18:42">2024-12-19</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2025 By heishuini</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.2.2"></script><script src="/js/main.js?v=5.2.2"></script><div class="js-pjax"><script>(() => {
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = `%%{init:{ 'theme':'${theme}'}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
